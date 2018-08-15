@@ -1,34 +1,40 @@
-def set_warn(bot, update):
-	from main import warn_limit_dict,warn_dict
+def setwarn(bot, update):
+	import pickle
+	from warn_dict import warn_dict
+	from warn_limit_dict import warn_limit_dict
 
 	msg = update.message
 	chat_id = msg.chat_id
 	user_id = msg.from_user.id
 	setter = bot.get_chat_member(chat_id, user_id)['status']
 	
-	try:
-		warn_limit = int(msg.text.split(' ',1)[1].strip())
-	except:
-		bot.send_message(chat_id = msg.chat_id, 
-						 text = "*Format:*\n_/set_\__warn <number>_", 
-						 reply_to_message_id=msg.message_id,
-						 parse_mode='MARKDOWN')
-		
 	if setter in ['administrator', 'creator']:
+		try:
+			warn_limit = int(msg.text.split(' ',1)[1].strip())
+		except:
+			bot.send_message(chat_id = msg.chat_id, 
+							 text = "*Format:*\n_/set_\__warn <number>_", 
+							 reply_to_message_id=msg.message_id,
+							 parse_mode='MARKDOWN')
+			return
+
 		warn_limit_dict[chat_id] = warn_limit
+
+		with open('warn_limit.db', 'wb') as warn_limit_db:
+			pickle.dump(warn_limit_dict, warn_limit_db)
+
 		bot.send_message(chat_id = msg.chat_id, 
 						 text = f"Warns have been set to {warn_limit}", 
 						 reply_to_message_id = msg.message_id)
-
-		if chat_id in warn_dict.keys():
-			warn_dict[chat_id]={}
 	else:
 		bot.send_message(chat_id = chat_id,
 						 text = "Fuck off.",
 						 reply_to_message_id = msg.message_id)
 
-def clear_warns(bot, update):
-	from main import warn_limit_dict,warn_dict
+def clearwarns(bot, update):
+	import pickle
+	from warn_dict import warn_dict
+	from warn_limit_dict import warn_limit_dict
 
 	msg = update.message
 	chat_id = msg.chat_id
@@ -41,6 +47,10 @@ def clear_warns(bot, update):
 
 			if warned in warn_dict[chat_id].keys():
 				warn_dict[chat_id][warned] = 0
+
+				with open('warn.db', 'wb') as warn_db:
+					pickle.dump(warn_dict, warn_db)
+
 				bot.send_message(chat_id = msg.chat_id, 
 								 text = f"Warns cleared for @{msg.reply_to_message.from_user.username}", 
 								 reply_to_message_id = msg.message_id)
@@ -50,18 +60,29 @@ def clear_warns(bot, update):
 								 reply_to_message_id = msg.message_id)
 
 def check_warn(bot, update, warned_id):
-	from main import warn_dict, warn_limit_dict
+	import pickle
+	from warn_dict import warn_dict
+	from warn_limit_dict import warn_limit_dict
+
 	chat_id = update.message.chat_id
 	if chat_id not in warn_limit_dict.keys():
-			warn_limit_dict[chat_id] = 3
+		warn_limit_dict[chat_id] = 3
+		with open('warn_limit.db', 'wb') as warn_limit_db:
+			pickle.dump(warn_limit_dict, warn_limit_db)
 
 	if chat_id not in warn_dict.keys():
 		warn_dict[chat_id] = {}
+		with open('warn.db', 'wb') as warn_db:
+			pickle.dump(warn_dict, warn_db)
 
 	if warned_id not in warn_dict[chat_id].keys():
 		warn_dict[chat_id][warned_id] = 1
+		with open('warn.db', 'wb') as warn_db:
+			pickle.dump(warn_dict, warn_db)
 	else:
 		warn_dict[chat_id][warned_id] += 1
+		with open('warn.db', 'wb') as warn_db:
+			pickle.dump(warn_dict, warn_db)
 
 	if warn_dict[chat_id][warned_id] >= warn_limit_dict[chat_id]:
 		warn_limit = warn_limit_dict[chat_id]
@@ -69,11 +90,15 @@ def check_warn(bot, update, warned_id):
 			bot.kick_chat_member(chat_id, warned_id)
 			text = f"Max warns {warn_limit}/{warn_limit} reached, user banned."
 			del warn_dict[chat_id][warned_id]
+			with open('warn.db', 'wb') as warn_db:
+				pickle.dump(warn_dict, warn_db)
 			return text
 
 		except:
 			warn_dict[chat_id][warned_id] -= 1
-			text="Couldn't kick, either I'm not an admin or the other user is."
+			with open('warn.db', 'wb') as warn_db:
+				pickle.dump(warn_dict, warn_db)
+			text = "Couldn't kick, either I'm not an admin or the other user is."
 			return text
 
 	else:
@@ -81,7 +106,9 @@ def check_warn(bot, update, warned_id):
 		return text
 
 def warn(bot, update):
+	import pickle
 	from chats_data import chats_data
+	
 	msg = update.message
 	chat_id = msg.chat_id
 	
@@ -91,8 +118,6 @@ def warn(bot, update):
 						 reply_to_message_id = msg.message_id,
 						 parse_mode = 'Markdown')
 		return
-
-	from main import warn_dict, warn_limit_dict
 
 	warned_id = msg.reply_to_message and msg.reply_to_message.from_user.id
 

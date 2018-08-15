@@ -1,4 +1,4 @@
-def add_filters(bot, update):
+def add_filter(bot, update):
 	from chats_data import chats_data
 	from filter_dict import filter_dict
 

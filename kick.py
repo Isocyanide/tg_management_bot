@@ -14,8 +14,7 @@ def kick(bot, update):
 	kicker = bot.get_chat_member(chat_id, msg.from_user.id)
 
 	if kicker['status'] != "member":
-		if <there is @> : <user to kick is that person>
-		elif update.message.reply_to_message:
+		if update.message.reply_to_message:
 			user_to_kick = update.message.reply_to_message.from_user
 		else:
 			bot.send_message(chat_id = chat_id,
